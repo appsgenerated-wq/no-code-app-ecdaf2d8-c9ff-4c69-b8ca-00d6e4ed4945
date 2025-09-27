@@ -1,0 +1,86 @@
+name: FlavorFind
+description: A food discovery app for browsing restaurants, menus, and reviews.
+
+entities:
+  User:
+    authenticable: true
+    properties:
+      - name
+      - { name: email, type: email }
+      - { name: role, type: choice, options: { values: [customer, owner, admin], default: customer } }
+    policies:
+      create:
+        - access: admin
+      read:
+        - { access: restricted, allow: User, condition: self }
+        - access: admin
+      update:
+        - { access: restricted, allow: User, condition: self }
+      delete:
+        - access: admin
+      signup:
+        - access: public
+
+  Restaurant:
+    properties:
+      - { name: title, type: string }
+      - { name: description, type: text }
+      - { name: address, type: text }
+      - { name: photo, type: image, options: { sizes: { thumbnail: { width: 400, height: 300 }, large: { width: 1024, height: 768 } } } }
+    belongsTo:
+      - { name: owner, entity: User }
+    policies:
+      create:
+        - { access: restricted, allow: User }
+      read:
+        - access: public
+      update:
+        - { access: restricted, allow: User, condition: self }
+        - access: admin
+      delete:
+        - { access: restricted, allow: User, condition: self }
+        - access: admin
+
+  MenuItem:
+    properties:
+      - { name: title, type: string }
+      - { name: description, type: text }
+      - { name: price, type: money, options: { currency: 'USD' } }
+      - { name: photo, type: image, options: { sizes: { thumbnail: { width: 200, height: 200 } } } }
+    belongsTo:
+      - { name: restaurant, entity: Restaurant }
+    policies:
+      create:
+        - { access: restricted, allow: User }
+      read:
+        - access: public
+      update:
+        - { access: restricted, allow: User } # Ownership is checked on the parent restaurant in the UI
+      delete:
+        - { access: restricted, allow: User } # Ownership is checked on the parent restaurant in the UI
+
+  Review:
+    properties:
+      - { name: rating, type: number, options: { min: 1, max: 5 } }
+      - { name: comment, type: text }
+    belongsTo:
+      - { name: author, entity: User }
+      - { name: restaurant, entity: Restaurant }
+    policies:
+      create:
+        - { access: restricted, allow: User }
+      read:
+        - access: public
+      update:
+        - { access: restricted, allow: User, condition: self }
+      delete:
+        - { access: restricted, allow: User, condition: self }
+
+
+# Health check endpoint for connection testing
+endpoints:
+  health:
+    path: /api/health
+    method: GET
+    policies: []
+    handler: healthCheck
